@@ -1,0 +1,1768 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>গরুর হাট — Qurbani Animal Price Map</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --green: #2d6a4f;
+            --green-light: #52b788;
+            --green-pale: #d8f3dc;
+            --amber: #e76f51;
+            --amber-pale: #fde8e0;
+            --gold: #f4a261;
+            --dark: #1b2a1e;
+            --mid: #2d3a30;
+            --surface: #f0f7f1;
+            --card: #ffffff;
+            --text: #1b2a1e;
+            --text-muted: #5a7a62;
+            --border: rgba(45, 106, 79, 0.15);
+            --radius: 12px;
+            --shadow: 0 2px 12px rgba(27, 42, 30, 0.10);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Syne', sans-serif;
+            background: var(--surface);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        header {
+            background: var(--dark);
+            padding: 0 1.5rem;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            z-index: 1000;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--green-light);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1;
+        }
+        .logo-bn {
+            font-family: 'Tiro Bangla', serif;
+            font-size: 14px;
+            color: var(--green-pale);
+            font-weight: 400;
+        }
+        .logo-en {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.4);
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+        }
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .btn {
+            padding: 7px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.15s;
+        }
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.14);
+        }
+        .app-body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+        .sidebar {
+            width: 360px;
+            flex-shrink: 0;
+            background: var(--card);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 500;
+        }
+        .sidebar-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .tab {
+            flex: 1;
+            padding: 10px 6px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            cursor: pointer;
+            color: var(--text-muted);
+            border-bottom: 2px solid transparent;
+            transition: all 0.15s;
+            background: none;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            font-family: 'Syne', sans-serif;
+        }
+        .tab.active {
+            color: var(--green);
+            border-bottom-color: var(--green);
+        }
+        .tab-panel {
+            display: none;
+            flex: 1;
+            overflow-y: auto;
+            flex-direction: column;
+        }
+        .tab-panel.active {
+            display: flex;
+        }
+        .panel-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .panel-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 10px;
+        }
+        .search-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .search-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            background: var(--surface);
+            color: var(--text);
+        }
+        .search-input:focus {
+            outline: none;
+            border-color: var(--green-light);
+            background: white;
+        }
+        .haat-list {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        .haat-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .haat-card:hover,
+        .haat-card.selected {
+            border-color: var(--green-light);
+            box-shadow: 0 0 0 3px rgba(82, 183, 136, 0.15);
+        }
+        .haat-card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+        .haat-name {
+            font-size: 15px;
+            font-weight: 700;
+        }
+        .haat-name-bn {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 1px;
+        }
+        .price-badge {
+            text-align: right;
+        }
+        .price-main {
+            font-size: 16px;
+            font-weight: 800;
+            color: var(--green);
+        }
+        .price-range {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 2px;
+            font-family: 'Tiro Bangla', serif;
+        }
+        .haat-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+        }
+        .meta-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        .trend-up {
+            color: var(--amber);
+        }
+        .trend-down {
+            color: var(--green-light);
+        }
+        .trend-flat {
+            color: var(--text-muted);
+        }
+        .confidence-bar {
+            height: 3px;
+            background: var(--border);
+            border-radius: 99px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: var(--green-light);
+            border-radius: 99px;
+            transition: width 0.4s;
+        }
+        .reports-count {
+            font-size: 11px;
+            color: var(--text-muted);
+            background: var(--green-pale);
+            padding: 2px 8px;
+            border-radius: 99px;
+            font-weight: 600;
+        }
+        .submit-form {
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--text-muted);
+        }
+        .form-input,
+        .form-select {
+            padding: 10px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            background: var(--surface);
+            color: var(--text);
+            width: 100%;
+        }
+        .form-input:focus,
+        .form-select:focus {
+            outline: none;
+            border-color: var(--green-light);
+            background: white;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 13px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-family: 'Syne', sans-serif;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .submit-btn:hover {
+            background: var(--green-light);
+        }
+        .success-toast {
+            background: var(--green-pale);
+            border: 1px solid var(--green-light);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--green);
+            font-weight: 600;
+            display: none;
+        }
+        .price-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+        .price-row .form-input {
+            flex: 1;
+        }
+        .report-card,
+        .history-item {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .report-card .top-row,
+        .history-top {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .report-card .animal-size {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 4px;
+        }
+        .report-card .price-row-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--green);
+            margin-bottom: 4px;
+        }
+        .report-card .notes {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .vote-row {
+            display: flex;
+            gap: 12px;
+        }
+        .vote-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s;
+        }
+        .vote-btn:hover:not(:disabled) {
+            background: var(--green-pale);
+            border-color: var(--green-light);
+        }
+        .vote-btn.voted-up {
+            background: var(--green-pale);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .vote-btn.voted-down {
+            background: var(--amber-pale);
+            border-color: var(--amber);
+            color: var(--amber);
+        }
+        .vote-btn:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+        .comments-section {
+            padding: 12px;
+        }
+        .comment-item {
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+        }
+        .comment-text {
+            margin-bottom: 2px;
+        }
+        .comment-time {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+        .comment-input-row {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .comment-input-row input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1.5px solid var(--border);
+            border-radius: 8px;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            background: var(--surface);
+            color: var(--text);
+        }
+        .comment-input-row input:focus {
+            outline: none;
+            border-color: var(--green-light);
+        }
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .map-stats {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 800;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .stat-pill {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 8px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .stat-pill strong {
+            color: var(--text);
+            font-size: 15px;
+        }
+        .locate-btn {
+            position: absolute;
+            bottom: 24px;
+            right: 12px;
+            z-index: 800;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+        .locate-btn:hover {
+            border-color: var(--green-light);
+            color: var(--green);
+        }
+        .add-haat-btn {
+            position: absolute;
+            bottom: 80px;
+            right: 12px;
+            z-index: 800;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+            transition: all 0.15s;
+        }
+        .add-haat-btn:hover,
+        .add-haat-btn.active-marking {
+            background: var(--green-pale);
+            border-color: var(--green);
+            color: var(--green);
+        }
+        .cow-marker {
+            width: 52px;
+            height: 64px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .cow-face {
+            width: 44px;
+            height: 44px;
+            background: #f4a261;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 26px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+            border: 3px solid white;
+            animation: bounce 0.6s ease;
+        }
+        .cow-marker .price-tag {
+            background: white;
+            border-radius: 6px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--green);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: -6px;
+            z-index: 1;
+            white-space: nowrap;
+        }
+        @keyframes bounce {
+            0% {
+                transform: scale(0);
+            }
+            60% {
+                transform: scale(1.15);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        .leaflet-popup-content-wrapper {
+            border-radius: 12px !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+            padding: 0 !important;
+            overflow: hidden;
+        }
+        .leaflet-popup-content {
+            margin: 0 !important;
+            width: 220px !important;
+        }
+        .leaflet-popup-tip {
+            background: white !important;
+        }
+        .popup-inner {
+            padding: 16px;
+            font-family: 'Syne', sans-serif;
+        }
+        .popup-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+        }
+        .popup-bn {
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .popup-price {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--green);
+            margin-bottom: 4px;
+        }
+        .popup-sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            font-family: 'Tiro Bangla', serif;
+        }
+        .popup-btn {
+            width: 100%;
+            padding: 8px;
+            background: var(--green);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-family: 'Syne', sans-serif;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .popup-btn:hover {
+            background: var(--green-light);
+        }
+        .haat-label {
+            background: rgba(255, 255, 255, 0.9);
+            border: 1px solid #2d6a4f;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1b2a1e;
+            white-space: nowrap;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+            pointer-events: none;
+        }
+        .map-search-overlay {
+            position: absolute;
+            top: 12px;
+            left: 12px;
+            z-index: 900;
+            display: flex;
+            gap: 6px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            padding: 6px 10px;
+            align-items: center;
+        }
+        #map-search-input {
+            border: none;
+            outline: none;
+            font-family: 'Syne', sans-serif;
+            font-size: 13px;
+            width: 220px;
+            background: transparent;
+            color: var(--text);
+        }
+        #map-search-input::placeholder {
+            color: var(--text-muted);
+        }
+        #map-search-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: var(--text-muted);
+            padding: 2px 4px;
+            border-radius: 4px;
+        }
+        #map-search-btn:hover {
+            background: var(--surface);
+            color: var(--green);
+        }
+        .db-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-left: 10px;
+        }
+        .db-status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+        .db-status-dot.connected {
+            background: #52b788;
+        }
+        .db-status-dot.disconnected {
+            background: #e76f51;
+            animation: none;
+        }
+        .db-status-dot.connecting {
+            background: #f4a261;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.4;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <div class="logo-icon">🐄</div>
+            <div class="logo-text">
+                <span class="logo-bn">গরুর হাট</span>
+                <span class="logo-en">Qurbani Animal Price Map · Bangladesh</span>
+            </div>
+            <span class="db-status" id="db-status">
+                <span class="db-status-dot connecting" id="db-status-dot"></span>
+                <span id="db-status-text">Connecting...</span>
+            </span>
+        </div>
+        <div class="header-actions">
+            <span id="live-badge" style="font-size:11px;color:rgba(255,255,255,0.4);display:flex;align-items:center;gap:5px;">
+                <span style="width:6px;height:6px;background:#52b788;border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+                LIVE DATA
+            </span>
+        </div>
+    </header>
+
+    <div class="app-body">
+        <div class="sidebar">
+            <div class="sidebar-tabs">
+                <button class="tab active" onclick="switchTab('haats', this)">📍 Haats</button>
+                <button class="tab" onclick="switchTab('submit', this)">➕ Submit</button>
+                <button class="tab" onclick="switchTab('reports', this)">📋 Reports</button>
+                <button class="tab" onclick="switchTab('comments', this)">💬 Comments</button>
+                <button class="tab" onclick="switchTab('history', this)">🕒 History</button>
+            </div>
+
+            <!-- HAATS TAB -->
+            <div class="tab-panel active" id="tab-haats">
+                <div class="panel-header">
+                    <div class="panel-title">Search by animal</div>
+                    <div class="search-row">
+                        <input type="text" id="animal-search" placeholder="Goru, Chagol, Dumba..." class="search-input" autocomplete="off">
+                        <button class="btn" id="panel-mark-btn" onclick="toggleMarkingMode()" style="background:var(--surface);border:1px solid var(--border);color:var(--text-muted);">📍 Mark</button>
+                    </div>
+                </div>
+                <div class="haat-list" id="haat-list"></div>
+            </div>
+
+            <!-- SUBMIT TAB -->
+            <div class="tab-panel" id="tab-submit">
+                <div class="submit-form">
+                    <div style="background:var(--green-pale);border-radius:10px;padding:12px;font-size:13px;color:var(--green);font-weight:600;line-height:1.5;">
+                        🙏 আপনার তথ্য সবার কাজে আসবে!<br>
+                        <span style="font-weight:400;color:var(--text-muted);">Your price report helps thousands of buyers.</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📍 Select Haat</label>
+                        <select class="form-select" id="submit-location">
+                            <option value="">Choose a haat location...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">🐄 Animal Type</label>
+                        <select class="form-select" id="submit-animal">
+                            <option value="">Select animal</option>
+                            <option value="Goru">Goru (গরু)</option>
+                            <option value="Chagol">Chagol (ছাগল)</option>
+                            <option value="Uth">Uth (উট)</option>
+                            <option value="Dumba">Dumba (দুম্বা)</option>
+                            <option value="Vera">Vera (ভেরা)</option>
+                            <option value="Other">Other Qurbani</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📏 Size</label>
+                        <select class="form-select" id="submit-size">
+                            <option value="">Select size</option>
+                            <option value="Boro">Boro (বড়)</option>
+                            <option value="Choto">Choto (ছোট)</option>
+                            <option value="Majhari">Majhari (মাঝারি)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">💰 Price Range (BDT)</label>
+                        <div class="price-row">
+                            <input type="number" class="form-input" id="submit-price-min" placeholder="Min (e.g. 80000)" min="1" step="1000">
+                            <span style="color:var(--text-muted);">–</span>
+                            <input type="number" class="form-input" id="submit-price-max" placeholder="Max (e.g. 120000)" min="1" step="1000">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">📝 Notes (optional)</label>
+                        <input type="text" class="form-input" id="submit-notes" placeholder="e.g. good quality, fat">
+                    </div>
+                    <div class="success-toast" id="submit-success">✅ Price submitted! Thank you for contributing.</div>
+                    <button class="submit-btn" onclick="submitPrice()">Submit Price Report →</button>
+                    <p style="font-size:11px;color:var(--text-muted);text-align:center;line-height:1.5;">
+                        Submissions are averaged with others for accuracy.<br>Spam is auto-filtered.
+                    </p>
+                </div>
+            </div>
+
+            <!-- REPORTS TAB -->
+            <div class="tab-panel" id="tab-reports">
+                <div class="panel-header">
+                    <div class="panel-title">Haat Reports</div>
+                </div>
+                <div id="reports-container" style="padding:12px; overflow-y:auto; flex:1;"></div>
+            </div>
+
+            <!-- COMMENTS TAB -->
+            <div class="tab-panel" id="tab-comments">
+                <div class="panel-header">
+                    <div class="panel-title">Haat Comments</div>
+                </div>
+                <div id="comments-container" style="padding:12px; overflow-y:auto; flex:1;"></div>
+            </div>
+
+            <!-- HISTORY TAB -->
+            <div class="tab-panel" id="tab-history">
+                <div class="panel-header">
+                    <div class="panel-title">Recent submissions</div>
+                </div>
+                <div class="history-list" id="history-list" style="padding:12px;"></div>
+            </div>
+        </div>
+
+        <div class="map-container">
+            <div id="map"></div>
+            <div class="map-search-overlay">
+                <input id="map-search-input" type="text" placeholder="Search haat by name..." list="haat-suggestions" autocomplete="off">
+                <datalist id="haat-suggestions"></datalist>
+                <button id="map-search-btn" onclick="performMapSearch()">🔍</button>
+            </div>
+            <div class="map-stats">
+                <div class="stat-pill">🐄 <strong id="stat-haats">0</strong> haats</div>
+                <div class="stat-pill">📊 <strong id="stat-reports">0</strong> reports</div>
+            </div>
+            <button class="locate-btn" onclick="locateUser()">📍 Near me</button>
+            <button class="add-haat-btn" id="map-mark-btn" onclick="toggleMarkingMode()">📍 Mark Haat</button>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js">
+    </script>
+    <script>
+        // ── SUPABASE CONFIGURATION ──
+        const SUPABASE_URL = 'https://pwriecafrddxucmtuqto.supabase.co';
+        const SUPABASE_ANON_KEY =
+            'sb_publishable_019WGxNxpLnnzhz9iImfcQ_ivSRHgRF';
+
+        let supabase = null;
+        let dbConnected = false;
+
+        // ── ANONYMOUS USER ID ──
+        function getUserId() {
+            let userId = localStorage.getItem('goru_haat_user_id');
+            if (!userId) {
+                userId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);
+                localStorage.setItem('goru_haat_user_id', userId);
+            }
+            return userId;
+        }
+        const USER_ID = getUserId();
+
+        // ── DB STATUS UI ──
+        function setDbStatus(status, text) {
+            dbConnected = status === 'connected';
+            const dot = document.getElementById('db-status-dot');
+            const label = document.getElementById('db-status-text');
+            dot.className = 'db-status-dot ' + status;
+            label.textContent = text;
+        }
+
+        // ── BUILT‑IN HAAT DATA (radius in meters) ──
+        const BUILT_IN_HAATS = [
+            { name: "Gabtoli Cattle Market", district: "Dhaka", lat: 23.7822, lng: 90.3374, radius: 650 },
+            { name: "Sarulia Haat", district: "Dhaka", lat: 23.7090, lng: 90.4780, radius: 600 },
+            { name: "Meradia Haat", district: "Dhaka", lat: 23.7700, lng: 90.4500, radius: 500 },
+            { name: "Basila Haat", district: "Dhaka", lat: 23.7460, lng: 90.3350, radius: 500 },
+            { name: "Uttara Sector 17 Haat", district: "Dhaka", lat: 23.8750, lng: 90.4000, radius: 450 },
+            { name: "Mirpur Section 6 Haat", district: "Dhaka", lat: 23.8040, lng: 90.3660, radius: 450 },
+            { name: "Jatrabari Haat", district: "Dhaka", lat: 23.7100, lng: 90.4340, radius: 450 },
+            { name: "Dholaikhal Haat", district: "Dhaka", lat: 23.7080, lng: 90.4170, radius: 400 },
+            { name: "Badda Haat", district: "Dhaka", lat: 23.7800, lng: 90.4200, radius: 450 },
+            { name: "Aftabnagar Haat", district: "Dhaka", lat: 23.7600, lng: 90.4600, radius: 450 },
+            { name: "Fatullah DIT Haat", district: "Narayanganj", lat: 23.6500, lng: 90.5200, radius: 400 },
+            { name: "Sonakanda Haat", district: "Narayanganj", lat: 23.6300, lng: 90.5400, radius: 350 },
+            { name: "Kashipur Haat", district: "Narayanganj", lat: 23.6200, lng: 90.5000, radius: 350 },
+            { name: "Signboard Haat", district: "Narayanganj", lat: 23.6800, lng: 90.5300, radius: 350 },
+            { name: "Poradia Haat", district: "Narsingdi", lat: 23.9300, lng: 90.7200, radius: 350 },
+            { name: "Madhabdi Haat", district: "Narsingdi", lat: 23.8500, lng: 90.7100, radius: 350 },
+            { name: "Chupar Haat", district: "Gazipur", lat: 23.9500, lng: 90.5400, radius: 350 },
+            { name: "Kapasia Haat", district: "Gazipur", lat: 24.1000, lng: 90.5600, radius: 300 },
+            { name: "Manikganj Haat", district: "Manikganj", lat: 23.8600, lng: 90.0000, radius: 350 },
+            { name: "Singair Haat", district: "Manikganj", lat: 23.8000, lng: 90.1500, radius: 300 },
+            { name: "Tangail Sadar Haat", district: "Tangail", lat: 24.2500, lng: 89.9200, radius: 400 },
+            { name: "Mirzapur Haat", district: "Tangail", lat: 24.1000, lng: 90.1000, radius: 350 },
+            { name: "Kishoreganj Haat", district: "Kishoreganj", lat: 24.4300, lng: 90.7800, radius: 400 },
+            { name: "Bhairab Haat", district: "Kishoreganj", lat: 24.0500, lng: 90.9800, radius: 400 },
+            { name: "Bibirhat Cattle Market", district: "Chattogram", lat: 22.5000, lng: 91.9000, radius: 500 },
+            { name: "Sagorika Haat", district: "Chattogram", lat: 22.3500, lng: 91.8200, radius: 500 },
+            { name: "Pahartali Haat", district: "Chattogram", lat: 22.3600, lng: 91.7800, radius: 450 },
+            { name: "Elias Brothers Haat", district: "Chattogram", lat: 22.3560, lng: 91.7830, radius: 450 },
+            { name: "Comilla Sadar Haat", district: "Cumilla", lat: 23.4600, lng: 91.1800, radius: 400 },
+            { name: "Chandina Haat", district: "Cumilla", lat: 23.4800, lng: 91.0000, radius: 350 },
+            { name: "Feni Haat", district: "Feni", lat: 23.0200, lng: 91.4000, radius: 350 },
+            { name: "Sonagazi Haat", district: "Feni", lat: 22.8300, lng: 91.4000, radius: 300 },
+            { name: "Lakshmipur Haat", district: "Lakshmipur", lat: 22.9500, lng: 90.8300, radius: 350 },
+            { name: "Ramganj Haat", district: "Lakshmipur", lat: 23.1000, lng: 90.8500, radius: 300 },
+            { name: "Noakhali Haat", district: "Noakhali", lat: 22.8200, lng: 91.1000, radius: 350 },
+            { name: "Begumganj Haat", district: "Noakhali", lat: 22.9400, lng: 91.1000, radius: 300 },
+            { name: "Cox's Bazar Haat", district: "Cox's Bazar", lat: 21.4300, lng: 92.0000, radius: 500 },
+            { name: "Ukhiya Haat", district: "Cox's Bazar", lat: 21.2300, lng: 92.1200, radius: 350 },
+            { name: "Rajshahi City Haat", district: "Rajshahi", lat: 24.3700, lng: 88.6000, radius: 450 },
+            { name: "Paba Haat", district: "Rajshahi", lat: 24.4500, lng: 88.6500, radius: 350 },
+            { name: "Bogra Haat", district: "Bogura", lat: 24.8500, lng: 89.3700, radius: 450 },
+            { name: "Sherpur Haat", district: "Bogura", lat: 24.6700, lng: 89.4300, radius: 350 },
+            { name: "Naogaon Haat", district: "Naogaon", lat: 24.8100, lng: 88.9400, radius: 400 },
+            { name: "Sapahar Haat", district: "Naogaon", lat: 25.1200, lng: 88.5800, radius: 300 },
+            { name: "Natore Haat", district: "Natore", lat: 24.4200, lng: 89.0000, radius: 350 },
+            { name: "Lalpur Haat", district: "Natore", lat: 24.1800, lng: 89.0500, radius: 300 },
+            { name: "Chapainawabganj Haat", district: "Chapainawabganj", lat: 24.5900, lng: 88.2700,
+            radius: 350 },
+            { name: "Khulna Sadar Haat", district: "Khulna", lat: 22.8200, lng: 89.5500, radius: 450 },
+            { name: "Phultala Haat", district: "Khulna", lat: 22.9000, lng: 89.5000, radius: 350 },
+            { name: "Jessore Haat", district: "Jashore", lat: 23.1700, lng: 89.2000, radius: 400 },
+            { name: "Benapole Haat", district: "Jashore", lat: 23.0400, lng: 88.9000, radius: 350 },
+            { name: "Satkhira Haat", district: "Satkhira", lat: 22.7200, lng: 89.0700, radius: 350 },
+            { name: "Bagerhat Haat", district: "Bagerhat", lat: 22.6500, lng: 89.7800, radius: 350 },
+            { name: "Mongla Haat", district: "Bagerhat", lat: 22.4800, lng: 89.6000, radius: 300 },
+            { name: "Barishal Sadar Haat", district: "Barishal", lat: 22.7000, lng: 90.3500, radius: 450 },
+            { name: "Bakerganj Haat", district: "Barishal", lat: 22.5000, lng: 90.4000, radius: 300 },
+            { name: "Bhola Haat", district: "Bhola", lat: 22.6800, lng: 90.6500, radius: 350 },
+            { name: "Patuakhali Haat", district: "Patuakhali", lat: 22.3600, lng: 90.3300, radius: 350 },
+            { name: "Pirojpur Haat", district: "Pirojpur", lat: 22.5800, lng: 89.9800, radius: 300 },
+            { name: "Kazi Bazar Haat", district: "Sylhet", lat: 24.8900, lng: 91.8700, radius: 450 },
+            { name: "Ranigonj Haat", district: "Sylhet", lat: 24.9000, lng: 91.9000, radius: 350 },
+            { name: "Habiganj Haat", district: "Habiganj", lat: 24.3800, lng: 91.4200, radius: 350 },
+            { name: "Moulvibazar Haat", district: "Moulvibazar", lat: 24.4800, lng: 91.7800, radius: 350 },
+            { name: "Sunamganj Haat", district: "Sunamganj", lat: 25.0700, lng: 91.4000, radius: 350 },
+            { name: "Rangpur Sadar Haat", district: "Rangpur", lat: 25.7500, lng: 89.2500, radius: 400 },
+            { name: "Taraganj Haat", district: "Rangpur", lat: 25.8000, lng: 89.0000, radius: 300 },
+            { name: "Dinajpur Haat", district: "Dinajpur", lat: 25.6200, lng: 88.6300, radius: 400 },
+            { name: "Thakurgaon Haat", district: "Thakurgaon", lat: 26.0300, lng: 88.4700, radius: 350 },
+            { name: "Panchagarh Haat", district: "Panchagarh", lat: 26.3400, lng: 88.5600, radius: 300 },
+            { name: "Kurigram Haat", district: "Kurigram", lat: 25.8000, lng: 89.6500, radius: 350 },
+            { name: "Rowmari Haat", district: "Kurigram", lat: 25.5600, lng: 89.8500, radius: 300 },
+            { name: "Lalmonirhat Haat", district: "Lalmonirhat", lat: 25.9200, lng: 89.4500, radius: 350 },
+            { name: "Mymensingh Sadar Haat", district: "Mymensingh", lat: 24.7500, lng: 90.4000, radius: 400 },
+            { name: "Trishal Haat", district: "Mymensingh", lat: 24.6000, lng: 90.3800, radius: 300 },
+            { name: "Jamalpur Haat", district: "Jamalpur", lat: 24.9200, lng: 89.9500, radius: 350 },
+            { name: "Sherpur Haat", district: "Sherpur", lat: 25.0200, lng: 90.0200, radius: 300 },
+            { name: "Netrokona Haat", district: "Netrokona", lat: 24.8800, lng: 90.7300, radius: 300 }
+        ];
+
+        // ── STATE ──
+        let reports = [];
+        let customHaats = [];
+        let comments = {};
+        let activeAnimalFilter = '';
+        let selectedHaat = null;
+        let markers = {};
+        let circles = {};
+        let userVotes = {};
+        let markingMode = false;
+
+        // LocalStorage backup keys (used as fallback if Supabase is unavailable)
+        const STORAGE_REPORTS = 'gorur_haat_reports_v11';
+        const STORAGE_VOTES = 'gorur_haat_votes_v11';
+        const STORAGE_CUSTOM_HAATS = 'gorur_haat_custom_haats_v11';
+        const STORAGE_COMMENTS = 'gorur_haat_comments_v11';
+
+        // ── DATA CONVERSION HELPERS ──
+        function dbReportToApp(row) {
+            return {
+                id: row.id,
+                haatId: row.haat_id,
+                animalType: row.animal_type,
+                size: row.size,
+                priceMin: row.price_min,
+                priceMax: row.price_max,
+                notes: row.notes || '',
+                time: row.created_at ? new Date(row.created_at).getTime() : Date.now(),
+                votes: { up: row.votes_up || 0, down: row.votes_down || 0 }
+            };
+        }
+
+        function appReportToDb(report) {
+            return {
+                id: report.id,
+                haat_id: report.haatId,
+                animal_type: report.animalType,
+                size: report.size,
+                price_min: report.priceMin,
+                price_max: report.priceMax,
+                notes: report.notes || '',
+                created_at: new Date(report.time).toISOString(),
+                votes_up: report.votes.up || 0,
+                votes_down: report.votes.down || 0
+            };
+        }
+
+        function dbHaatToApp(row) {
+            return {
+                id: row.id,
+                name: row.name,
+                district: row.district,
+                lat: row.lat,
+                lng: row.lng,
+                radius: row.radius
+            };
+        }
+
+        // ── SUPABASE OPERATIONS ──
+        async function ensureBuiltInHaatsInDb() {
+            if (!supabase || !dbConnected) return;
+            try {
+                const builtInRows = BUILT_IN_HAATS.map(h => ({
+                    id: 'builtin_' + h.name.replace(/\s+/g, '_'),
+                    name: h.name,
+                    district: h.district,
+                    lat: h.lat,
+                    lng: h.lng,
+                    radius: h.radius
+                }));
+                const { error } = await supabase.from('haats').upsert(builtInRows, { onConflict: 'id' });
+                if (error) console.warn('Upsert built-in haats warning:', error.message);
+            } catch (e) {
+                console.warn('Failed to upsert built-in haats:', e.message);
+            }
+        }
+
+        async function loadCustomHaatsFromDb() {
+            if (!supabase || !dbConnected) return [];
+            try {
+                const { data, error } = await supabase.from('haats').select('*').not('id', 'like',
+                'builtin_%');
+                if (error) throw error;
+                return (data || []).map(dbHaatToApp);
+            } catch (e) {
+                console.warn('Failed to load custom haats from DB:', e.message);
+                return [];
+            }
+        }
+
+        async function insertCustomHaatToDb(haat) {
+            if (!supabase || !dbConnected) return false;
+            try {
+                const { error } = await supabase.from('haats').insert({
+                    id: haat.id,
+                    name: haat.name,
+                    district: haat.district,
+                    lat: haat.lat,
+                    lng: haat.lng,
+                    radius: haat.radius
+                });
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.warn('Failed to insert custom haat:', e.message);
+                return false;
+            }
+        }
+
+        async function loadReportsFromDb() {
+            if (!supabase || !dbConnected) return [];
+            try {
+                const { data, error } = await supabase.from('reports').select('*').order('created_at', {
+                    ascending: false
+                });
+                if (error) throw error;
+                return (data || []).map(dbReportToApp);
+            } catch (e) {
+                console.warn('Failed to load reports from DB:', e.message);
+                return [];
+            }
+        }
+
+        async function insertReportToDb(report) {
+            if (!supabase || !dbConnected) return false;
+            try {
+                const dbRow = appReportToDb(report);
+                const { error } = await supabase.from('reports').insert(dbRow);
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.warn('Failed to insert report:', e.message);
+                return false;
+            }
+        }
+
+        async function updateReportVotesInDb(reportId, votesUp, votesDown) {
+            if (!supabase || !dbConnected) return false;
+            try {
+                const { error } = await supabase.from('reports').update({
+                    votes_up: votesUp,
+                    votes_down: votesDown
+                }).eq('id', reportId);
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.warn('Failed to update report votes:', e.message);
+                return false;
+            }
+        }
+
+        async function loadUserVotesFromDb() {
+            if (!supabase || !dbConnected) return {};
+            try {
+                const { data, error } = await supabase.from('user_votes').select('*').eq('user_id',
+                USER_ID);
+                if (error) throw error;
+                const votes = {};
+                (data || []).forEach(v => { votes[v.report_id] = v.direction; });
+                return votes;
+            } catch (e) {
+                console.warn('Failed to load user votes:', e.message);
+                return {};
+            }
+        }
+
+        async function insertUserVoteToDb(reportId, direction) {
+            if (!supabase || !dbConnected) return false;
+            try {
+                const { error } = await supabase.from('user_votes').insert({
+                    user_id: USER_ID,
+                    report_id: reportId,
+                    direction: direction
+                });
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.warn('Failed to insert user vote:', e.message);
+                return false;
+            }
+        }
+
+        async function loadCommentsFromDb() {
+            if (!supabase || !dbConnected) return {};
+            try {
+                const { data, error } = await supabase.from('comments').select('*').order('created_at', {
+                    ascending: true
+                });
+                if (error) throw error;
+                const grouped = {};
+                (data || []).forEach(c => {
+                    if (!grouped[c.haat_id]) grouped[c.haat_id] = [];
+                    grouped[c.haat_id].push({
+                        id: c.id,
+                        text: c.text,
+                        time: c.created_at ? new Date(c.created_at).getTime() : Date.now()
+                    });
+                });
+                return grouped;
+            } catch (e) {
+                console.warn('Failed to load comments:', e.message);
+                return {};
+            }
+        }
+
+        async function insertCommentToDb(haatId, comment) {
+            if (!supabase || !dbConnected) return false;
+            try {
+                const { error } = await supabase.from('comments').insert({
+                    id: String(comment.id),
+                    haat_id: haatId,
+                    text: comment.text,
+                    created_at: new Date(comment.time).toISOString()
+                });
+                if (error) throw error;
+                return true;
+            } catch (e) {
+                console.warn('Failed to insert comment:', e.message);
+                return false;
+            }
+        }
+
+        // ── LOCAL STORAGE FALLBACKS ──
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_REPORTS, JSON.stringify(reports.filter(r => r.id.startsWith(
+                    'user_'))));
+                localStorage.setItem(STORAGE_VOTES, JSON.stringify(userVotes));
+                localStorage.setItem(STORAGE_CUSTOM_HAATS, JSON.stringify(customHaats));
+                localStorage.setItem(STORAGE_COMMENTS, JSON.stringify(comments));
+            } catch (e) {}
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const cr = localStorage.getItem(STORAGE_REPORTS);
+                if (cr) reports = JSON.parse(cr);
+                const cv = localStorage.getItem(STORAGE_VOTES);
+                if (cv) userVotes = JSON.parse(cv);
+                const ch = localStorage.getItem(STORAGE_CUSTOM_HAATS);
+                if (ch) customHaats = JSON.parse(ch);
+                const cc = localStorage.getItem(STORAGE_COMMENTS);
+                if (cc) comments = JSON.parse(cc);
+            } catch (e) {}
+        }
+
+        // ── HAAT HELPERS ──
+        function getAllHaats() {
+            const map = new Map();
+            BUILT_IN_HAATS.forEach(h => map.set('builtin_' + h.name.replace(/\s+/g, '_'), {
+                ...h,
+                id: 'builtin_' + h.name.replace(/\s+/g, '_')
+            }));
+            customHaats.forEach(h => map.set(h.id, h));
+            return Array.from(map.values());
+        }
+
+        function initHaatSuggestions() {
+            const datalist = document.getElementById('haat-suggestions');
+            const all = getAllHaats();
+            datalist.innerHTML = all.map(h => `<option value="${h.name} (${h.district})">`).join('');
+        }
+
+        function filterReports(haatId, animalFilter) {
+            if (!haatId) return [];
+            if (!animalFilter) return reports.filter(r => r.haatId === haatId);
+            const lowerFilter = animalFilter.toLowerCase().trim();
+            return reports.filter(r => r.haatId === haatId && r.animalType && r.animalType.toLowerCase().includes(
+                lowerFilter));
+        }
+
+        function getAvgPrice(haatId, animalFilter) {
+            const reps = filterReports(haatId, animalFilter);
+            if (!reps.length) return null;
+            const total = reps.reduce((s, r) => s + (r.priceMin + r.priceMax) / 2, 0);
+            return Math.round(total / reps.length);
+        }
+
+        function getPriceRange(haatId, animalFilter) {
+            const reps = filterReports(haatId, animalFilter);
+            if (!reps.length) return null;
+            let min = Infinity,
+                max = -Infinity;
+            reps.forEach(r => {
+                if (r.priceMin < min) min = r.priceMin;
+                if (r.priceMax > max) max = r.priceMax;
+            });
+            return { min, max };
+        }
+
+        function getConfidence(haatId, animalFilter) {
+            return Math.min(100, filterReports(haatId, animalFilter).length * 15);
+        }
+
+        function getTrend(reps) {
+            if (reps.length < 2) return 'flat';
+            const sorted = [...reps].sort((a, b) => b.time - a.time);
+            const recentAvg = (sorted[0].priceMin + sorted[0].priceMax) / 2;
+            const older = sorted.slice(1, 5);
+            if (!older.length) return 'flat';
+            const oldAvg = older.reduce((s, r) => s + (r.priceMin + r.priceMax) / 2, 0) / older.length;
+            const diff = (recentAvg - oldAvg) / oldAvg;
+            if (diff > 0.03) return 'up';
+            if (diff < -0.03) return 'down';
+            return 'flat';
+        }
+
+        function formatPrice(p) { return p ? (p >= 100000 ? (p / 100000).toFixed(1) + 'L' : Math.round(p / 1000) +
+                'k') : '—'; }
+
+        function formatPriceRangeBangla(range) {
+            if (!range) return 'কোন তথ্য নেই';
+            const minHazar = Math.round(range.min / 1000);
+            const maxHazar = Math.round(range.max / 1000);
+            return `মূল্য ${minHazar} হাজার থেকে ${maxHazar} হাজার টাকা`;
+        }
+
+        function formatDateTime(ts) {
+            const d = new Date(ts);
+            return d.toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit',
+                minute: '2-digit', hour12: true });
+        }
+
+        // ── MAP ──
+        const map = L.map('map', { zoomControl: false }).setView([23.8, 90.35], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+        function makeCowIcon(haat) {
+            const price = getAvgPrice(haat.id, activeAnimalFilter);
+            const label = price ? '৳' + formatPrice(price) : '—';
+            const html =
+                `<div class="cow-marker"><div class="cow-face">🐄</div><div class="price-tag">${label}</div></div>`;
+            return L.divIcon({ className: '', html, iconSize: [52, 64], iconAnchor: [26, 64], popupAnchor: [0, -64] });
+        }
+
+        function makePopupHtml(haat) {
+            const avg = getAvgPrice(haat.id, activeAnimalFilter);
+            const range = getPriceRange(haat.id, activeAnimalFilter);
+            const repsCount = filterReports(haat.id, activeAnimalFilter).length;
+            const conf = getConfidence(haat.id, activeAnimalFilter);
+            const rangeStr = formatPriceRangeBangla(range);
+            return `<div class="popup-inner">
+            <div class="popup-name">${haat.name}</div>
+            <div class="popup-bn">${haat.district}</div>
+            <div class="popup-price">${avg ? '৳' + avg.toLocaleString() : 'No reports'}</div>
+            <div class="popup-sub">${repsCount} report${repsCount !== 1 ? 's' : ''} · ${rangeStr}</div>
+            <div style="height:4px;background:#e8f5e9;border-radius:99px;margin-bottom:12px;"><div style="width:${conf}%;height:100%;background:#52b788;border-radius:99px;"></div></div>
+            <button class="popup-btn" onclick="openSubmitFor('${haat.id}')">+ Submit price</button>
+        </div>`;
+        }
+
+        function renderMarkers() {
+            Object.values(circles).forEach(c => map.removeLayer(c));
+            circles = {};
+            Object.values(markers).forEach(m => map.removeLayer(m));
+            markers = {};
+
+            getAllHaats().forEach(haat => {
+                const m = L.marker([haat.lat, haat.lng], { icon: makeCowIcon(haat) })
+                    .addTo(map)
+                    .bindPopup(makePopupHtml(haat), { maxWidth: 240 });
+                m.on('click', () => selectHaat(haat.id));
+                m.bindTooltip(haat.name, { permanent: true, direction: 'top', offset: [0, -30],
+                    className: 'haat-label' });
+                markers[haat.id] = m;
+
+                if (haat.radius && haat.radius > 0) {
+                    const circle = L.circle([haat.lat, haat.lng], {
+                        radius: haat.radius,
+                        color: '#f4a261',
+                        fillColor: '#f4a261',
+                        fillOpacity: 0.15,
+                        weight: 2
+                    }).addTo(map);
+                    circle.bindTooltip(`Radius: ${haat.radius}m`, { permanent: false });
+                    circles[haat.id] = circle;
+                }
+            });
+        }
+
+        async function reverseGeocodeDistrict(lat, lng) {
+            try {
+                const url =
+                    `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=10`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (data && data.address) {
+                    return data.address.state_district || data.address.district || data.address.county || '';
+                }
+            } catch (e) {}
+            return '';
+        }
+
+        function toggleMarkingMode() {
+            markingMode = !markingMode;
+            document.getElementById('panel-mark-btn')?.classList.toggle('active-marking', markingMode);
+            document.getElementById('map-mark-btn')?.classList.toggle('active-marking', markingMode);
+            map.getContainer().style.cursor = markingMode ? 'crosshair' : '';
+            if (markingMode) alert('Click on the map where the haat is located.');
+        }
+
+        map.on('click', async function(e) {
+            if (!markingMode) return;
+            const { lat, lng } = e.latlng;
+            const name = prompt('Haat name (English):');
+            if (!name) return;
+            const district = await reverseGeocodeDistrict(lat, lng);
+            let districtName = '';
+            if (!district) {
+                const manual = prompt('Could not detect district. Enter manually:');
+                if (!manual) return;
+                districtName = manual;
+            } else {
+                const confirmDistrict = confirm(`Detected district: ${district}. Is this correct?`);
+                if (!confirmDistrict) {
+                    const manual = prompt('Enter district manually:');
+                    if (!manual) return;
+                    districtName = manual;
+                } else {
+                    districtName = district;
+                }
+            }
+            const radiusInput = prompt('Approx radius (meters, leave empty if unknown):');
+            let radius = null;
+            if (radiusInput) {
+                const parsed = parseFloat(radiusInput);
+                if (!isNaN(parsed) && parsed > 0) radius = parsed;
+            }
+            const newHaat = { id: 'custom_' + Date.now(), name, district: districtName, lat, lng, radius };
+            customHaats.push(newHaat);
+
+            // Save to Supabase
+            const saved = await insertCustomHaatToDb(newHaat);
+            if (!saved) saveToLocalStorage();
+
+            initHaatSuggestions();
+            renderMarkers();
+            renderHaatList();
+            populateSelect();
+            toggleMarkingMode();
+        });
+
+        // ── HAAT LIST ──
+        function renderHaatList() {
+            const animalQuery = document.getElementById('animal-search').value.trim();
+            activeAnimalFilter = animalQuery;
+
+            const all = getAllHaats();
+            const haatsWithData = all.map(h => {
+                const reps = filterReports(h.id, activeAnimalFilter);
+                const avg = getAvgPrice(h.id, activeAnimalFilter);
+                const range = getPriceRange(h.id, activeAnimalFilter);
+                const conf = getConfidence(h.id, activeAnimalFilter);
+                const trend = getTrend(reps);
+                const trendIcon = trend === 'up' ? '↑' : trend === 'down' ? '↓' : '→';
+                const rangeBangla = formatPriceRangeBangla(range);
+                return { ...h, avg, reports: reps.length, range, conf, trend, trendIcon, rangeBangla };
+            }).sort((a, b) => b.reports - a.reports);
+
+            document.getElementById('haat-list').innerHTML = haatsWithData.map(h => `
+            <div class="haat-card ${selectedHaat === h.id ? 'selected' : ''}" onclick="selectHaat('${h.id}')">
+                <div class="haat-card-top">
+                    <div><div class="haat-name">${h.name}</div><div class="haat-name-bn">${h.district}</div></div>
+                    <div class="price-badge"><div class="price-main">${h.avg ? '৳' + Math.round(h.avg / 1000) + 'k' : '—'}</div><div class="price-range">${h.rangeBangla}</div></div>
+                </div>
+                <div class="haat-meta">
+                    <span class="meta-chip">${h.district}</span>
+                    <span class="meta-chip ${h.trend === 'up' ? 'trend-up' : h.trend === 'down' ? 'trend-down' : 'trend-flat'}">${h.trendIcon} ${h.trend}</span>
+                    <span class="reports-count">${h.reports} reports</span>
+                </div>
+                <div class="confidence-bar"><div class="confidence-fill" style="width:${h.conf}%"></div></div>
+            </div>
+        `).join('');
+
+            document.getElementById('stat-reports').textContent = reports.length;
+            document.getElementById('stat-haats').textContent = all.length;
+
+            renderReportsTab();
+            renderCommentsTab();
+        }
+
+        // ── REPORTS TAB ──
+        function renderReportsTab() {
+            const container = document.getElementById('reports-container');
+            if (!selectedHaat) {
+                container.innerHTML =
+                    '<p style="color:var(--text-muted);padding:16px;">Select a haat to see its reports.</p>';
+                return;
+            }
+            const haatReports = reports.filter(r => r.haatId === selectedHaat).sort((a, b) => b.time - a.time);
+            if (!haatReports.length) {
+                container.innerHTML =
+                    '<p style="color:var(--text-muted);padding:16px;">No reports yet for this haat.</p>';
+                return;
+            }
+            container.innerHTML = haatReports.map(r => {
+                const voted = userVotes[r.id];
+                return `<div class="report-card">
+                <div class="top-row">
+                    <span>${r.animalType} · ${r.size}</span>
+                    <span>${formatDateTime(r.time)}</span>
+                </div>
+                <div class="price-row-text">৳${r.priceMin.toLocaleString()} – ৳${r.priceMax.toLocaleString()}</div>
+                ${r.notes ? `<div class="notes">${escapeHTML(r.notes)}</div>` : ''}
+                <div class="vote-row">
+                    <button class="vote-btn up ${voted === 'up' ? 'voted-up' : ''}" onclick="vote('${r.id}','up')" ${voted ? 'disabled' : ''}>👍 ${r.votes.up}</button>
+                    <button class="vote-btn down ${voted === 'down' ? 'voted-down' : ''}" onclick="vote('${r.id}','down')" ${voted ? 'disabled' : ''}>👎 ${r.votes.down}</button>
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+        // ── COMMENTS TAB ──
+        function renderCommentsTab() {
+            const container = document.getElementById('comments-container');
+            if (!selectedHaat) {
+                container.innerHTML =
+                    '<p style="color:var(--text-muted);padding:16px;">Select a haat to view comments.</p>';
+                return;
+            }
+            const haat = getAllHaats().find(h => h.id === selectedHaat);
+            if (!haat) return;
+            const haatComments = comments[selectedHaat] || [];
+            container.innerHTML = `
+            <div style="font-weight:600;margin-bottom:8px;">💬 ${haat.name} এ মন্তব্য</div>
+            ${haatComments.length ? haatComments.map(c => `
+                <div class="comment-item">
+                    <div class="comment-text">${escapeHTML(c.text)}</div>
+                    <div class="comment-time">${formatDateTime(c.time)}</div>
+                </div>
+            `).join('') : '<p style="color:var(--text-muted);font-size:13px;">এখনো কোনো মন্তব্য নেই।</p>'}
+            <div class="comment-input-row">
+                <input type="text" id="comment-input" placeholder="আপনার মন্তব্য...">
+                <button class="btn btn-primary" onclick="addComment('${selectedHaat}')">Post</button>
+            </div>
+        `;
+        }
+
+        async function addComment(haatId) {
+            const inp = document.getElementById('comment-input');
+            const text = inp.value.trim();
+            if (!text) return;
+            if (!comments[haatId]) comments[haatId] = [];
+            const newComment = { id: Date.now(), text, time: Date.now() };
+            comments[haatId].push(newComment);
+
+            // Save to Supabase
+            const saved = await insertCommentToDb(haatId, newComment);
+            if (!saved) saveToLocalStorage();
+
+            renderCommentsTab();
+        }
+
+        function selectHaat(id) {
+            selectedHaat = id;
+            const haat = getAllHaats().find(h => h.id === id);
+            if (haat) {
+                map.flyTo([haat.lat, haat.lng], 12, { duration: 1 });
+                setTimeout(() => markers[id]?.openPopup(), 600);
+            }
+            renderHaatList();
+        }
+
+        function escapeHTML(str) {
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // ── SUBMIT ──
+        function populateSelect() {
+            const sel = document.getElementById('submit-location');
+            sel.innerHTML = '<option value="">Choose...</option>';
+            getAllHaats().forEach(h => {
+                const opt = document.createElement('option');
+                opt.value = h.id;
+                opt.textContent = `${h.name} (${h.district})`;
+                sel.appendChild(opt);
+            });
+        }
+
+        function openSubmitFor(haatId) {
+            switchTab('submit', document.querySelectorAll('.tab')[1]);
+            document.getElementById('submit-location').value = haatId;
+        }
+
+        async function submitPrice() {
+            const haatId = document.getElementById('submit-location').value;
+            const animalType = document.getElementById('submit-animal').value;
+            const size = document.getElementById('submit-size').value;
+            const minVal = parseInt(document.getElementById('submit-price-min').value);
+            const maxVal = parseInt(document.getElementById('submit-price-max').value);
+            const notes = document.getElementById('submit-notes').value.trim();
+
+            if (!haatId || !animalType || !size || isNaN(minVal) || isNaN(maxVal)) {
+                alert('Fill all fields (haat, animal, size, min price, max price).');
+                return;
+            }
+            if (minVal <= 0 || maxVal <= 0) { alert('Price values must be positive.'); return; }
+            if (minVal > maxVal) { alert('Min price cannot exceed max price.'); return; }
+
+            const newReport = {
+                id: 'user_' + Date.now(),
+                haatId,
+                animalType,
+                size,
+                priceMin: minVal,
+                priceMax: maxVal,
+                notes,
+                time: Date.now(),
+                votes: { up: 0, down: 0 }
+            };
+            reports.unshift(newReport);
+
+            // Save to Supabase
+            const saved = await insertReportToDb(newReport);
+            if (!saved) saveToLocalStorage();
+
+            renderHaatList();
+            renderMarkers();
+            document.getElementById('submit-location').value = '';
+            document.getElementById('submit-animal').value = '';
+            document.getElementById('submit-size').value = '';
+            document.getElementById('submit-price-min').value = '';
+            document.getElementById('submit-price-max').value = '';
+            document.getElementById('submit-notes').value = '';
+            const toast = document.getElementById('submit-success');
+            toast.style.display = 'block';
+            setTimeout(() => toast.style.display = 'none', 4000);
+        }
+
+        // ── VOTE ──
+        async function vote(reportId, dir) {
+            if (userVotes[reportId]) return;
+            const rep = reports.find(r => r.id === reportId);
+            if (!rep) return;
+            rep.votes[dir]++;
+            userVotes[reportId] = dir;
+
+            // Save vote to Supabase
+            const voteSaved = await insertUserVoteToDb(reportId, dir);
+            const votesUpdated = await updateReportVotesInDb(reportId, rep.votes.up, rep.votes.down);
+            if (!voteSaved || !votesUpdated) saveToLocalStorage();
+
+            renderHaatList();
+            if (document.getElementById('tab-reports').classList.contains('active')) renderReportsTab();
+            if (document.getElementById('tab-history').classList.contains('active')) renderHistory();
+        }
+
+        // ── HISTORY ──
+        function renderHistory() {
+            const sorted = [...reports].sort((a, b) => b.time - a.time).slice(0, 25);
+            document.getElementById('history-list').innerHTML = sorted.map(r => {
+                const haat = getAllHaats().find(h => h.id === r.haatId);
+                if (!haat) return '';
+                const voted = userVotes[r.id];
+                const rangeText = `৳${r.priceMin.toLocaleString()} – ৳${r.priceMax.toLocaleString()}`;
+                return `<div class="history-item">
+                <div class="history-top"><div class="history-location">${haat.name} (${haat.district})</div><div class="history-price">${rangeText}</div></div>
+                <div class="history-meta"><span>${r.animalType} · ${r.size} ${r.notes ? '· ' + r.notes : ''}</span><span>${formatDateTime(r.time)}</span></div>
+                <div class="vote-row">
+                    <button class="vote-btn up ${voted === 'up' ? 'voted-up' : ''}" onclick="vote('${r.id}','up')" ${voted ? 'disabled' : ''}>👍 ${r.votes.up}</button>
+                    <button class="vote-btn down ${voted === 'down' ? 'voted-down' : ''}" onclick="vote('${r.id}','down')" ${voted ? 'disabled' : ''}>👎 ${r.votes.down}</button>
+                </div>
+            </div>`;
+            }).join('');
+        }
+
+        function switchTab(name, btn) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+            document.getElementById('tab-' + name).classList.add('active');
+            if (name === 'history') renderHistory();
+            if (name === 'reports') renderReportsTab();
+            if (name === 'comments') renderCommentsTab();
+        }
+
+        function locateUser() {
+            if (!navigator.geolocation) return;
+            navigator.geolocation.getCurrentPosition(pos => {
+                map.flyTo([pos.coords.latitude, pos.coords.longitude], 11, { duration: 1 });
+                L.circleMarker([pos.coords.latitude, pos.coords.longitude], {
+                    radius: 8,
+                    fillColor: '#52b788',
+                    color: 'white',
+                    weight: 2,
+                    fillOpacity: 0.9
+                }).addTo(map).bindPopup('📍 আপনি এখানে').openPopup();
+            });
+        }
+
+        // ── MAP SEARCH ──
+        let searchMarker;
+
+        function performMapSearch() {
+            const input = document.getElementById('map-search-input');
+            const value = input.value.trim();
+            if (!value) return;
+            const all = getAllHaats();
+            let match = all.find(h => `${h.name} (${h.district})` === value);
+            if (!match) match = all.find(h => h.name.toLowerCase().includes(value.toLowerCase()) || h.district
+                .toLowerCase().includes(value.toLowerCase()));
+            if (match) {
+                if (searchMarker) map.removeLayer(searchMarker);
+                map.flyTo([match.lat, match.lng], 13, { duration: 1.5 });
+                searchMarker = L.marker([match.lat, match.lng], {
+                    icon: L.divIcon({
+                        className: '',
+                        html: '<div style="background:#e76f51;color:white;border-radius:50%;width:24px;height:24px;text-align:center;line-height:24px;font-weight:bold;">⭐</div>',
+                        iconSize: [24, 24],
+                        iconAnchor: [12, 12]
+                    })
+                }).addTo(map).bindPopup(`<b>${match.name}</b><br>${match.district}`).openPopup();
+                input.value = `${match.name} (${match.district})`;
+                selectHaat(match.id);
+            } else {
+                alert('Haat not found.');
+            }
+        }
+
+        // ── INIT ──
+        async function init() {
+            // Initialize Supabase
+            try {
+                if (typeof supabase !== 'undefined' && supabase.createClient) {
+                    supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    // Test connection
+                    const { error } = await supabase.from('haats').select('id').limit(1);
+                    if (error) {
+                        console.warn('Supabase connection test failed:', error.message);
+                        setDbStatus('disconnected', 'DB: ' + error.message);
+                        dbConnected = false;
+                    } else {
+                        setDbStatus('connected', 'DB Connected');
+                        dbConnected = true;
+                    }
+                } else {
+                    console.warn('Supabase JS library not loaded. Running in offline mode.');
+                    setDbStatus('disconnected', 'Offline Mode');
+                    dbConnected = false;
+                }
+            } catch (e) {
+                console.warn('Supabase init error:', e.message);
+                setDbStatus('disconnected', 'Offline Mode');
+                dbConnected = false;
+            }
+
+            if (dbConnected) {
+                // Ensure built-in haats exist in DB
+                await ensureBuiltInHaatsInDb();
+
+                // Load data from Supabase
+                const [dbCustomHaats, dbReports, dbUserVotes, dbComments] = await Promise.all([
+                    loadCustomHaatsFromDb(),
+                    loadReportsFromDb(),
+                    loadUserVotesFromDb(),
+                    loadCommentsFromDb()
+                ]);
+
+                customHaats = dbCustomHaats;
+                reports = dbReports;
+                userVotes = dbUserVotes;
+                comments = dbComments;
+            } else {
+                // Fallback to localStorage
+                loadFromLocalStorage();
+            }
+
+            // Initialize UI
+            initHaatSuggestions();
+            populateSelect();
+            renderHaatList();
+            renderMarkers();
+            renderHistory();
+
+            document.getElementById('animal-search').addEventListener('input', () => {
+                renderHaatList();
+                renderMarkers();
+            });
+
+            document.getElementById('map-search-input').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    performMapSearch();
+                }
+            });
+        }
+
+        // Start the app
+        init();
+    </script>
+</body>
+</html>
